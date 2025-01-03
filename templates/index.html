@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Desktop Assistant</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #45a049;
+            --background-color: #f0f2f5;
+            --text-color: #333;
+            --error-color: #f44336;
+            --success-color: #4CAF50;
+            --card-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .assistant-info {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .assistant-avatar {
+            width: 100px;
+            height: 100px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .assistant-avatar i {
+            font-size: 40px;
+            color: white;
+        }
+
+        .command-list {
+            list-style: none;
+        }
+
+        .command-list li {
+            padding: 10px;
+            margin-bottom: 8px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .command-list li:hover {
+            background-color: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #conversation {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(100vh - 250px);
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 12px 16px;
+            border-radius: 8px;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .command {
+            background-color: #e3f2fd;
+            margin-left: auto;
+            border-bottom-right-radius: 2px;
+        }
+
+        .response {
+            background-color: #f5f5f5;
+            margin-right: auto;
+            border-bottom-left-radius: 2px;
+        }
+
+        .error {
+            background-color: #ffebee;
+            color: var(--error-color);
+        }
+
+        .status {
+            background-color: #fff3e0;
+            text-align: center;
+            margin: 10px auto;
+            width: fit-content;
+            font-style: italic;
+        }
+
+        /* Controls Styles */
+        .controls {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background-color: #bdbdbd;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .listening-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--error-color);
+            margin-left: 10px;
+        }
+
+        .listening-indicator.active {
+            background-color: var(--success-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="assistant-info">
+                <div class="assistant-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h2>AI Assistant</h2>
+                <p>Your personal desktop companion</p>
+            </div>
+            
+            <h3>Available Commands</h3>
+            <ul class="command-list">
+                <li><i class="fas fa-search"></i> "What is [topic]" - Search Wikipedia</li>
+                <li><i class="fas fa-cloud"></i> "Weather in [city]" - Get weather</li>
+                <li><i class="fas fa-clock"></i> "What's the time" - Current time</li>
+                <li><i class="fas fa-calendar"></i> "What's the date" - Current date</li>
+                <li><i class="fas fa-newspaper"></i> "Tell me the news" - Latest headlines</li>
+                <li><i class="fas fa-laugh"></i> "Tell me a joke" - Random joke</li>
+                <li><i class="fas fa-calculator"></i> "Calculate [expression]" - Math helper</li>
+                <li><i class="fas fa-music"></i> "Play [song]" - Play music</li>
+                <li><i class="fas fa-bell"></i> "Set reminder at [time] to [task]" - Set reminder</li>
+                <li><i class="fas fa-wifi"></i> "Test internet speed" - Speed test</li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="chat-header">
+                <h2>Conversation</h2>
+                <div class="listening-indicator" id="listeningIndicator"></div>
+            </div>
+
+            <div id="conversation"></div>
+
+            <div class="controls">
+                <button id="startButton">
+                    <i class="fas fa-microphone"></i>
+                    Start Listening
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const socket = io();
+        const conversation = document.getElementById('conversation');
+        const startButton = document.getElementById('startButton');
+        const listeningIndicator = document.getElementById('listeningIndicator');
+        
+        function addMessage(text, className) {
+            const message = document.createElement('div');
+            message.className = `message ${className}`;
+            message.textContent = text;
+            conversation.appendChild(message);
+            conversation.scrollTop = conversation.scrollHeight;
+        }
+        
+        startButton.addEventListener('click', () => {
+            startButton.disabled = true;
+            listeningIndicator.classList.add('active');
+            socket.emit('start_listening');
+        });
+        
+        socket.on('status', (data) => {
+            addMessage(data.text, 'status');
+        });
+        
+        socket.on('command', (data) => {
+            addMessage(`You: ${data.text}`, 'command');
+        });
+        
+        socket.on('response', (data) => {
+            addMessage(`Assistant: ${data.text}`, 'response');
+            startButton.disabled = false;
+            listeningIndicator.classList.remove('active');
+        });
+        
+        socket.on('error', (data) => {
+            addMessage(data.text, 'error');
+            startButton.disabled = false;
+            listeningIndicator.classList.remove('active');
+        });
+
+        // Keyboard shortcut (Space) to start listening
+        document.addEventListener('keypress', (e) => {
+            if (e.code === 'Space' && !startButton.disabled) {
+                e.preventDefault();
+                startButton.click();
+            }
+        });
+    </script>
+</body>
+</html>

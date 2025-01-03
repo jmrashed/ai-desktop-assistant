@@ -2,6 +2,9 @@
 
 A Python-based AI desktop assistant designed to perform various tasks like opening websites, searching Wikipedia, playing music, retrieving the current time, and more. The assistant uses speech recognition and text-to-speech to interact with the user in a conversational manner.
 
+
+![Demo Screenshots](./assets/images/ai-asistant.png)
+
 ## Features
 
 - **Wikipedia Search**: Ask questions like "Who is Elon Musk?" or "What is Python?"
