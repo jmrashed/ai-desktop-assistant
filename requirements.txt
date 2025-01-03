@@ -1,0 +1,8 @@
+SpeechRecognition
+pyttsx3
+gTTS
+playsound
+pywhatkit
+wikipedia-api
+platformdirs
+datetime
