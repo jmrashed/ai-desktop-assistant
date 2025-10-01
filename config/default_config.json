@@ -1,0 +1,8 @@
+{
+  "wake_word": "assistant",
+  "weather_api_key": "",
+  "user_pin": "1234",
+  "speech_rate": 175,
+  "timeout": 5,
+  "language": "en-in"
+}

@@ -4,5 +4,5 @@ gTTS
 playsound
 pywhatkit
 wikipedia-api
-platformdirs
-datetime
+requests
+psutil
